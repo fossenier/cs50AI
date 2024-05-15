@@ -18,7 +18,6 @@ def load_data(directory):
     Load data from CSV files into memory.
     """
     # Load people
-    directory = directory
     with open(f"{directory}/people.csv", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -92,15 +91,18 @@ def shortest_path(source, target):
 
     If no possible path, returns None.
     """
+    if source == target:
+        return []
+
     frontier = QueueFrontier()
     # place in the root node to begin journeying to the target
     frontier.add(Node(state=source, parent=None, action=None))
 
+    explored_states = set()
+
     while not frontier.empty():
         node = frontier.remove()
         frontier_expansion = neighbors_for_person(node.state)
-
-        explored_states = set()
 
         for movie_id, person_id in frontier_expansion:
             unexplored_node = Node(state=person_id, parent=node, action=movie_id)
