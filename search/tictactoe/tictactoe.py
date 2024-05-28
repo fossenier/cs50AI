@@ -132,7 +132,4 @@ def minimax(board):
     if terminal(board):
         return None
 
-    frontier = actions(board)
-    for action in frontier:
-        new_state = result(board, action)
-        if terminal(new_state):
+    return actions(board)[0]
