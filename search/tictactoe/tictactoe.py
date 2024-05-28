@@ -54,27 +54,62 @@ def result(board, action):
     """
     Returns the board that results from making move (i, j) on the board.
     """
-    selected_tile = board[action[0]][action[1]]
+    targeted_tile = board[action[0]][action[1]]
     # do not overwrite tiles
-    if selected_tile != EMPTY:
+    if targeted_tile != EMPTY:
         raise ValueError("Must provide a valid action")
 
+    # determine what player to mark
     active_player = player(board)
+    # copy the board and update it
     resulting_board = deepcopy(board)
+    resulting_board[action[0]][action[1]] = active_player
+
+    return resulting_board
 
 
-def winner(board):
+def winner(board: List[List[str]]) -> str:
     """
     Returns the winner of the game, if there is one.
     """
-    raise NotImplementedError
+    # check horizontals
+    for row in board:
+        if row.count(row[0]) == 3:
+            return row[0]
+
+    # check verticals
+    for i in range(3):
+        col = []
+        for j in range(3):
+            # static column, dynamic row
+            col.append(board[j][i])
+        if col.count(col[0]) == 3:
+            return col[0]
+
+    # check diagonals
+    diagonals = [
+        [board[0][0], board[1][1], board[2][2]],
+        [board[2][0], board[1][1], board[0][2]],
+    ]
+    for diagonal in diagonals:
+        if diagonal.count(diagonal[0]) == 3:
+            return diagonal[0]
 
 
-def terminal(board):
+def terminal(board: List[List[str]]) -> bool:
     """
     Returns True if game is over, False otherwise.
     """
-    raise NotImplementedError
+    # the board is completely full
+    if actions(board) == []:
+        return True
+
+    # the game is over if somebody won
+    elif winner(board):
+        return True
+
+    else:
+        return False
 
 
 def utility(board):
