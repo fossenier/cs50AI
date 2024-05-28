@@ -40,11 +40,11 @@ def actions(board: List[List[str]]) -> List[Tuple[int, int]]:
     row -> i
     tile -> j
     """
-    open_tiles = []
+    open_tiles = set()
     for i, row in enumerate(board):
         for j, tile in enumerate(row):
             if tile == EMPTY:
-                open_tiles.append((i, j))
+                open_tiles.add((i, j))
 
     # list of all non occupied tiles
     return open_tiles
@@ -54,7 +54,10 @@ def result(board, action):
     """
     Returns the board that results from making move (i, j) on the board.
     """
-    targeted_tile = board[action[0]][action[1]]
+    i, j = action
+    if i not in [0, 1, 2] or j not in [0, 1, 2]:
+        raise ValueError("Must provide a valid action")
+    targeted_tile = board[i][j]
     # do not overwrite tiles
     if targeted_tile != EMPTY:
         raise ValueError("Must provide a valid action")
@@ -63,7 +66,7 @@ def result(board, action):
     active_player = player(board)
     # copy the board and update it
     resulting_board = deepcopy(board)
-    resulting_board[action[0]][action[1]] = active_player
+    resulting_board[i][j] = active_player
 
     return resulting_board
 
@@ -75,7 +78,8 @@ def winner(board: List[List[str]]) -> str:
     # check horizontals
     for row in board:
         if row.count(row[0]) == 3:
-            return row[0]
+            if row[0]:
+                return row[0]
 
     # check verticals
     for i in range(3):
@@ -84,7 +88,8 @@ def winner(board: List[List[str]]) -> str:
             # static column, dynamic row
             col.append(board[j][i])
         if col.count(col[0]) == 3:
-            return col[0]
+            if col[0]:
+                return col[0]
 
     # check diagonals
     diagonals = [
@@ -93,7 +98,8 @@ def winner(board: List[List[str]]) -> str:
     ]
     for diagonal in diagonals:
         if diagonal.count(diagonal[0]) == 3:
-            return diagonal[0]
+            if diagonal[0]:
+                return diagonal[0]
 
 
 def terminal(board: List[List[str]]) -> bool:
@@ -101,7 +107,7 @@ def terminal(board: List[List[str]]) -> bool:
     Returns True if game is over, False otherwise.
     """
     # the board is completely full
-    if actions(board) == []:
+    if len(actions(board)) == 0:
         return True
 
     # the game is over if somebody won
@@ -130,7 +136,7 @@ def minimax(board):
     Returns the optimal action for the current player on the board.
     """
 
-    def recursive_minimax(board):
+    def recursive_minimax(board, previously_optimized=None):
         """
         Recurses down possible trees, and for each layer returns the utility and move which,
         assuming optimal plays on both sides, results in the current best outcome.
@@ -148,7 +154,7 @@ def minimax(board):
 
         # all actions are explored (9, then 8, then 7...)
         for action in actions(board):
-            new_utility, _ = recursive_minimax(result(board, action))
+            new_utility, _ = recursive_minimax(result(board, action), optimal_utility)
             # optimize for min / max
             new_optimal_utility = optimizer(optimal_utility, new_utility)
 
@@ -156,6 +162,14 @@ def minimax(board):
             if new_optimal_utility != optimal_utility:
                 optimal_action = action
                 optimal_utility = new_utility
+
+            # alpha beta pruning
+            if previously_optimized:
+                # if the current child player would choose one of the new explored actions
+                # before what the parent is currently choosing, then stop exploring since
+                # nothing new that the parent would like can be discovered
+                if optimizer(previously_optimized, optimal_utility) == optimal_utility:
+                    return optimal_utility, optimal_action
 
         return optimal_utility, optimal_action
 
