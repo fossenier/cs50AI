@@ -129,7 +129,34 @@ def minimax(board):
     """
     Returns the optimal action for the current player on the board.
     """
-    if terminal(board):
-        return None
 
-    return actions(board)[0]
+    def recursive_minimax(board):
+        """
+        Recurses down possible trees, and for each layer returns the utility and move which,
+        assuming optimal plays on both sides, results in the current best outcome.
+        """
+        optimal_action = None
+        # the game is over, no player makes a move, the utility is returned
+        if terminal(board):
+            return utility(board), optimal_action
+
+        theplayer = player(board)
+        # make the optimal_utility infinitely low for X (max player)
+        # or infinitely high for O (min player)
+        optimal_utility = float("-inf") if theplayer == X else float("inf")
+        optimizer = max if theplayer == X else min
+
+        # all actions are explored (9, then 8, then 7...)
+        for action in actions(board):
+            new_utility, _ = recursive_minimax(result(board, action))
+            # optimize for min / max
+            new_optimal_utility = optimizer(optimal_utility, new_utility)
+
+            # a more optimal action is found
+            if new_optimal_utility != optimal_utility:
+                optimal_action = action
+                optimal_utility = new_utility
+
+        return optimal_utility, optimal_action
+
+    return recursive_minimax(board)[1]
