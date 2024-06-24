@@ -80,11 +80,39 @@ knowledge2 = And(
 
 # Puzzle 3
 # A says either "I am a knight." or "I am a knave.", but you don't know which.
+statement_A3_0 = AKnight
+statement_A3_1 = AKnave
+statement_A3 = Or(statement_A3_0, statement_A3_1)
 # B says "A said 'I am a knave'."
 # B says "C is a knave."
+statement_B3 = And(statement_A3_1, CKnave)
 # C says "A is a knight."
+statement_C3 = AKnight
 knowledge3 = And(
-    # TODO
+    # A is a knight or a knave.
+    Or(AKnight, AKnave),
+    # A is not both a knight and a knave.
+    Not(And(AKnight, AKnave)),
+    # Telling the truth leads to being a knight. Being a knight leads to lying.
+    Biconditional(statement_A3, AKnight),
+    # Lying leads to being a knave. Being a knave leads to lying.
+    Biconditional(Not(statement_A3), AKnave),
+    # B is a knight or a knave.
+    Or(BKnight, BKnave),
+    # B is not both a knight and a knave.
+    Not(And(BKnight, BKnave)),
+    # Telling the truth leads to being a knight. Being a knight leads to lying.
+    Biconditional(statement_B3, BKnight),
+    # Lying leads to being a knave. Being a knave leads to lying.
+    Biconditional(Not(statement_B3), BKnave),
+    # C is a knight or a knave.
+    Or(CKnight, CKnave),
+    # C is not both a knight and a knave.
+    Not(And(CKnight, CKnave)),
+    # Telling the truth leads to being a knight. Being a knight leads to lying.
+    Biconditional(statement_C3, CKnight),
+    # Lying leads to being a knave. Being a knave leads to lying.
+    Biconditional(Not(statement_C3), CKnave),
 )
 
 
