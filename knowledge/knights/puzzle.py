@@ -9,16 +9,22 @@ BKnave = Symbol("B is a Knave")
 CKnight = Symbol("C is a Knight")
 CKnave = Symbol("C is a Knave")
 
+# Each speaker is either a knight or a knave
+game_rules = And(
+    Biconditional(AKnight, Not(AKnave)),
+    Biconditional(BKnight, Not(BKnave)),
+    Biconditional(CKnight, Not(CKnave)),
+)
+
 # Puzzle 0
 # A says "I am both a knight and a knave."
 statement_A0 = And(
     AKnave,
     AKnight,
 )
+
 knowledge0 = And(
-    # A is either a knight or a knave but not both.
-    Or(AKnight, AKnave),
-    Not(And(AKnight, AKnave)),
+    game_rules,
     # Truthfulness of statement implies knighthood
     Biconditional(statement_A0, AKnight),
 )
