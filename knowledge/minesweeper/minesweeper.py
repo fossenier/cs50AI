@@ -197,7 +197,38 @@ class MinesweeperAI:
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
+        # 1
+        self.moves_made.add(cell)
+
+        # 2
+        self.mark_safe(cell)
+
+        # 3
+        cells = self.adjacent_cells(cell)
+        # if there are known mines, update the count to be reflect uncertainty
+        count -= len(cells.intersection(self.mines))
+        # ignore known mines and safe cells
+        cells.difference_update(self.mines)
+        cells.difference_update(self.safes)
+        self.knowledge.append(Sentence(cells, count))
+
+        new_info = True
+        while new_info:
+            new_info = False
+            # mark cells as safe or as mines
+
         raise NotImplementedError
+
+    def adjacent_cells(self, cell):
+        """
+        Finds all adjacent valid cells on the board.
+        """
+        adjacent = set()
+        i, j = cell
+        for row in range(i - 1, i + 2):
+            for col in range(j - 1, j + 2):
+                if 0 < row < self.height and 0 < col < self.width:
+                    adjacent.add((row, col))
 
     def make_safe_move(self):
         """
