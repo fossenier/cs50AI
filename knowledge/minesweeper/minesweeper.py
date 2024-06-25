@@ -216,8 +216,41 @@ class MinesweeperAI:
         while new_info:
             new_info = False
             # mark cells as safe or as mines
+            new_info = self.update_sentences()
+            # create new inferences
+            new_info = self.infer_sentences()
 
         raise NotImplementedError
+
+    def infer_sentences(self):
+        """
+        Sentences are inferred using the tactics discussed in the problem definition
+        background.
+        """
+        
+
+    def update_sentences(self):
+        """
+        Cells are marked as safe or as mines based on the sentences in self.knowledge.
+        """
+        resolved_sentences = []
+        for sentence in self.knowledge:
+            mines = sentence.known_mines()
+            if mines:
+                resolved_sentences.append(sentence)
+                for cell in mines:
+                    self.mark_mine(cell)
+            safes = sentence.known_safes()
+            if safes:
+                resolved_sentences.append(sentence)
+                for cell in safes:
+                    self.mark_safe(cell)
+
+        for sentence in resolved_sentences:
+            self.knowledge.remove(sentence)
+
+        # return True if updates were made
+        return len(resolved_sentences) > 0
 
     def adjacent_cells(self, cell):
         """
