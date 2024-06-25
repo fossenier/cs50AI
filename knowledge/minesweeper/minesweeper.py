@@ -212,6 +212,7 @@ class MinesweeperAI:
         cells.difference_update(self.safes)
         self.knowledge.append(Sentence(cells, count))
 
+        # 4 & 5
         new_info = True
         while new_info:
             new_info = False
@@ -227,7 +228,35 @@ class MinesweeperAI:
         Sentences are inferred using the tactics discussed in the problem definition
         background.
         """
-        
+        inferred_sentences = []
+
+        for i, sentence_a in enumerate(self.knowledge):
+            for sentence_b in self.knowledge[i:]:
+                # skip these sentences if they are the same
+                if sentence_a == sentence_b:
+                    continue
+                # sentence a is a subset of the info in sentence b
+                if sentence_a.cells.issubset(sentence_b.cells):
+                    inferred_sentences.append(
+                        Sentence(
+                            sentence_b.cells.difference(sentence_a),
+                            sentence_b.count - sentence_a.count,
+                        )
+                    )
+                # sentence b is a subset of the info in sentence a
+                if sentence_b.cells.issubset(sentence_a.cells):
+                    inferred_sentences.append(
+                        Sentence(
+                            sentence_a.cells.difference(sentence_b),
+                            sentence_a.count - sentence_b.count,
+                        )
+                    )
+
+        for sentence in inferred_sentences:
+            self.knowledge.append(sentence)
+
+        # return True if updates were made
+        return len(inferred_sentences) > 0
 
     def update_sentences(self):
         """
@@ -272,7 +301,10 @@ class MinesweeperAI:
         This function may use the knowledge in self.mines, self.safes
         and self.moves_made, but should not modify any of those values.
         """
-        raise NotImplementedError
+        unused_safe_moves = self.safes.difference(self.moves_made)
+        if unused_safe_moves == set():
+            return None
+        return unused_safe_moves.pop()
 
     def make_random_move(self):
         """

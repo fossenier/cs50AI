@@ -1,4 +1,6 @@
 a = set((1, 2, 3))
-b = set((2,))
+b = set((1, 2, 3))
 
-print(b.issubset(a))
+print(a.issubset(b))
+print(a.difference(b) == set())
+print(a == b)
