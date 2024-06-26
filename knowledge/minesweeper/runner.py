@@ -187,7 +187,7 @@ while True:
             move = ai.make_safe_move()
             if move is None:
                 move = ai.make_random_move()
-                if move is None:
+                if move is None:  # the game is won when there are no random left
                     flags = ai.mines.copy()
                     print("No moves left to make.")
                 else:

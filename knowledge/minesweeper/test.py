@@ -1,3 +1,12 @@
-a = set((1, 2, 3))
+a = [1, 2, 3]
+b = [2, 3, 4]
+c = [5, 6, 7]
 
-print(1 in a)
+abc = [a, b, c]
+
+for letter in abc:
+    if 2 in letter:
+        for letter in abc:
+            if 2 in letter:
+                letter.remove(2)
+    print(letter)

@@ -124,23 +124,17 @@ class Sentence:
         Updates internal knowledge representation given the fact that
         a cell is known to be a mine.
         """
-        cell = set(cell)
-        # if the mine is a cell in this sentence
-        if cell.issubset(self.cells):
-            # don't track it anymore and mark that there is one less mine
-            self.cells.difference_update(cell)
-            self.count -= len(cell)
+        if cell in self.cells:
+            self.cells.discard(cell)
+            self.count -= 1
 
     def mark_safe(self, cell):
         """
         Updates internal knowledge representation given the fact that
         a cell is known to be safe.
         """
-        cell = set(cell)
-        # if the safe tile is a cell in this sentence
-        if cell.issubset(self.cells):
-            # don't track it anymore
-            self.cells.difference_update(cell)
+        if cell in self.cells:
+            self.cells.discard(cell)
 
 
 class MinesweeperAI:
@@ -210,7 +204,9 @@ class MinesweeperAI:
         # ignore known mines and safe cells
         cells.difference_update(self.mines)
         cells.difference_update(self.safes)
-        self.knowledge.append(Sentence(cells, count))
+        new_info = Sentence(cells, count)
+        if new_info not in self.knowledge:
+            self.knowledge.append(new_info)
 
         # 4 & 5
         new_info = True
@@ -221,8 +217,6 @@ class MinesweeperAI:
             # create new inferences
             new_info = self.infer_sentences()
 
-        raise NotImplementedError
-
     def infer_sentences(self):
         """
         Sentences are inferred using the tactics discussed in the problem definition
@@ -232,51 +226,75 @@ class MinesweeperAI:
 
         for i, sentence_a in enumerate(self.knowledge):
             for sentence_b in self.knowledge[i:]:
-                # skip these sentences if they are the same
+                # sentences being the same needs to be skipped
                 if sentence_a == sentence_b:
                     continue
                 # sentence a is a subset of the info in sentence b
                 if sentence_a.cells.issubset(sentence_b.cells):
-                    inferred_sentences.append(
-                        Sentence(
-                            sentence_b.cells.difference(sentence_a),
-                            sentence_b.count - sentence_a.count,
-                        )
+                    inferred_sentence = Sentence(
+                        sentence_b.cells.difference(sentence_a.cells),
+                        sentence_b.count - sentence_a.count,
                     )
+                    if self.new_sentence(inferred_sentence):
+                        inferred_sentences.append(inferred_sentence)
                 # sentence b is a subset of the info in sentence a
                 if sentence_b.cells.issubset(sentence_a.cells):
-                    inferred_sentences.append(
-                        Sentence(
-                            sentence_a.cells.difference(sentence_b),
-                            sentence_a.count - sentence_b.count,
-                        )
+                    inferred_sentence = Sentence(
+                        sentence_a.cells.difference(sentence_b.cells),
+                        sentence_a.count - sentence_b.count,
                     )
+                    if self.new_sentence(inferred_sentence):
+                        inferred_sentences.append(inferred_sentence)
 
         for sentence in inferred_sentences:
-            self.knowledge.append(sentence)
+            if sentence not in self.knowledge:
+                self.knowledge.append(sentence)
 
         # return True if updates were made
         return len(inferred_sentences) > 0
+
+    def new_sentence(self, sentence):
+        """
+        Checks to see if a sentence has new information not in knowledge.
+        """
+        for known_sentence in self.knowledge:
+            if (
+                sentence.cells == known_sentence.cells
+                and sentence.count == known_sentence.count
+            ):
+                return False
 
     def update_sentences(self):
         """
         Cells are marked as safe or as mines based on the sentences in self.knowledge.
         """
         resolved_sentences = []
+        discovered_mines = set()
+        discovered_safes = set()
+
         for sentence in self.knowledge:
+            # extract data
             mines = sentence.known_mines()
-            if mines:
-                resolved_sentences.append(sentence)
-                for cell in mines:
-                    self.mark_mine(cell)
             safes = sentence.known_safes()
-            if safes:
+
+            # the sentence is useless
+            if len(sentence.cells) == 0:
                 resolved_sentences.append(sentence)
-                for cell in safes:
-                    self.mark_safe(cell)
+            elif mines:
+                resolved_sentences.append(sentence)
+                discovered_mines.update(mines)
+            elif safes:
+                resolved_sentences.append(sentence)
+                discovered_safes.update(safes)
 
         for sentence in resolved_sentences:
             self.knowledge.remove(sentence)
+
+        for mine in discovered_mines:
+            self.mark_mine(mine)
+
+        for safe in discovered_safes:
+            self.mark_safe(safe)
 
         # return True if updates were made
         return len(resolved_sentences) > 0
@@ -289,8 +307,10 @@ class MinesweeperAI:
         i, j = cell
         for row in range(i - 1, i + 2):
             for col in range(j - 1, j + 2):
-                if 0 < row < self.height and 0 < col < self.width:
+                if 0 <= row < self.height and 0 <= col < self.width:
                     adjacent.add((row, col))
+        adjacent.discard(cell)
+        return adjacent
 
     def make_safe_move(self):
         """
@@ -316,8 +336,14 @@ class MinesweeperAI:
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        while True:
-            move = (random.randrange(self.height), random.randrange(self.width))
-            if move in self.mines:
-                continue
-            return move
+        # generate all possible moves
+        moves = set()
+        for i in range(self.height):
+            for j in range(self.width):
+                moves.add((i, j))
+        valid_moves = moves.difference(self.mines, self.moves_made)
+
+        if len(valid_moves) > 0:
+            return valid_moves.pop()
+        else:
+            return None
