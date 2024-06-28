@@ -109,6 +109,7 @@ class Sentence:
         # cells must be a mine
         if len(self.cells) == self.count:
             return self.cells
+        return set()
 
     def known_safes(self):
         """
@@ -118,6 +119,7 @@ class Sentence:
         # given area all cells cannot be a mine
         if self.count == 0:
             return self.cells
+        return set()
 
     def mark_mine(self, cell):
         """
@@ -199,7 +201,7 @@ class MinesweeperAI:
 
         # 3
         cells = self.adjacent_cells(cell)
-        # if there are known mines, update the count to be reflect uncertainty
+        # if there are known mines, update the count to reflect uncertainty
         count -= len(cells.intersection(self.mines))
         # ignore known mines and safe cells
         cells.difference_update(self.mines)
@@ -213,9 +215,11 @@ class MinesweeperAI:
         while new_info:
             new_info = False
             # mark cells as safe or as mines
-            new_info = self.update_sentences()
+            if self.update_sentences():
+                new_info = True
             # create new inferences
-            new_info = self.infer_sentences()
+            if self.infer_sentences():
+                new_info = True
 
     def infer_sentences(self):
         """
@@ -223,9 +227,10 @@ class MinesweeperAI:
         background.
         """
         inferred_sentences = []
+        inferred_safes = set()
 
         for i, sentence_a in enumerate(self.knowledge):
-            for sentence_b in self.knowledge[i:]:
+            for sentence_b in self.knowledge[i + 1 :]:
                 # sentences being the same needs to be skipped
                 if sentence_a == sentence_b:
                     continue
@@ -237,6 +242,7 @@ class MinesweeperAI:
                     )
                     if self.new_sentence(inferred_sentence):
                         inferred_sentences.append(inferred_sentence)
+                        inferred_safes.update(inferred_sentence.known_safes())
                 # sentence b is a subset of the info in sentence a
                 if sentence_b.cells.issubset(sentence_a.cells):
                     inferred_sentence = Sentence(
@@ -245,10 +251,14 @@ class MinesweeperAI:
                     )
                     if self.new_sentence(inferred_sentence):
                         inferred_sentences.append(inferred_sentence)
+                        inferred_safes.update(inferred_sentence.known_safes())
 
         for sentence in inferred_sentences:
             if sentence not in self.knowledge:
                 self.knowledge.append(sentence)
+
+        for safe in inferred_safes:
+            self.mark_safe(safe)
 
         # return True if updates were made
         return len(inferred_sentences) > 0
@@ -281,11 +291,11 @@ class MinesweeperAI:
             if len(sentence.cells) == 0:
                 resolved_sentences.append(sentence)
             elif mines:
-                resolved_sentences.append(sentence)
                 discovered_mines.update(mines)
-            elif safes:
                 resolved_sentences.append(sentence)
+            elif safes:
                 discovered_safes.update(safes)
+                resolved_sentences.append(sentence)
 
         for sentence in resolved_sentences:
             self.knowledge.remove(sentence)
@@ -297,7 +307,7 @@ class MinesweeperAI:
             self.mark_safe(safe)
 
         # return True if updates were made
-        return len(resolved_sentences) > 0
+        return len(discovered_mines) > 0 or len(discovered_safes) > 0
 
     def adjacent_cells(self, cell):
         """
