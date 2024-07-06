@@ -115,7 +115,53 @@ def iterate_pagerank(corpus, damping_factor):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    all_links = set()
+    for links in corpus.values():
+        for link in links:
+            all_links.add(link)
+
+    # Determine all the pages which link to a given page.
+    inbound_sources = dict()
+    for page in corpus:
+        outgoing_links = corpus[page]
+        # When a page has no outgoing links, we treat it as being linked to everything.
+        if outgoing_links == []:
+            # TODO remove this print()
+            print("Wahoo I have been triggered and look, no links")
+            outgoing_links = all_links
+        for link in outgoing_links:
+            try:
+                inbound_sources[link].append(page)
+            except KeyError:
+                inbound_sources[link] = [page]
+
+    # Setup PageRank to be all equal in the beginning.
+    corpus_size = len(corpus)
+    base = 1 - damping_factor
+    pagerank = {page: base / corpus_size for page in corpus}
+    deviation = 1
+
+    while deviation > 0.001:
+        deviation = 0
+        new_pagerank = dict()
+        for page in pagerank:
+            summation = 0
+            for source in inbound_sources[page]:
+                innard = pagerank[source] / len(corpus[source])
+                summation += innard
+            modded = damping_factor * summation
+            new_pagerank[page] = base + modded
+            page_deviation = abs(pagerank[page] - new_pagerank[page])
+            if page_deviation > deviation:
+                deviation = page_deviation
+        pagerank = new_pagerank
+
+    # Bully into becoming 1.
+    current_total = sum(pagerank.values())
+    for page in pagerank:
+        pagerank[page] /= current_total
+
+    return pagerank
 
 
 if __name__ == "__main__":
