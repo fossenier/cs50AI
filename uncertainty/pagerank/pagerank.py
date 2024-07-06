@@ -1,3 +1,5 @@
+from random import choice, choices
+
 import os
 import random
 import re
@@ -54,17 +56,17 @@ def transition_model(corpus, page, damping_factor):
     linked to by `page`. With probability `1 - damping_factor`, choose
     a link at random chosen from all pages in the corpus.
     """
-    # Set the distribution to (1 - damping_factor) / corpus size
+    # Set the distribution to (1 - damping_factor) / corpus size.
     distribution = dict()
     corpus_size = len(corpus)
     random_page = 1 - damping_factor
     for pg in corpus:
         distribution[pg] = random_page / corpus_size
 
-    # Get the links branching off of the given page
-    links = corpus[pg]
+    # Get the links branching off of the given page.
+    links = corpus[page]
 
-    # Add to the distribution (damping_factor / links size) for each link
+    # Add to the distribution (damping_factor / links size) for each link.
     link_weight = damping_factor / len(links)
     for link in links:
         distribution[link] += link_weight
@@ -81,8 +83,27 @@ def sample_pagerank(corpus, damping_factor, n):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    transition_model(corpus, "1", damping_factor)
-    raise NotImplementedError
+    # Initialize the counter for where the page surfer ends up.
+    surfer_tally = dict()
+    for page in corpus:
+        surfer_tally[page] = 0
+
+    # Pick a random page to begin surfing from.
+    sample = choice([k for k in corpus])
+    for _ in range(n):
+        distribution = transition_model(corpus, sample, damping_factor)
+        # Pick one page to surf to, bearing in mind the probability of going there.
+        values, probabilities = list(), list()
+        for page in distribution:
+            values.append(page)
+            probabilities.append(distribution[page])
+        sample = choices(values, weights=probabilities, k=1)[0]
+        surfer_tally[sample] += 1
+
+    # Adjust for the sample size.
+    for page in surfer_tally:
+        surfer_tally[page] /= n
+    return surfer_tally
 
 
 def iterate_pagerank(corpus, damping_factor):
