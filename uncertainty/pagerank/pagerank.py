@@ -115,9 +115,10 @@ def iterate_pagerank(corpus, damping_factor):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
+    # Bank of all links.
     all_links = set()
-    for links in corpus.values():
-        for link in links:
+    for link_list in corpus.values():
+        for link in link_list:
             all_links.add(link)
 
     # Determine all the pages which link to a given page.
@@ -136,27 +137,35 @@ def iterate_pagerank(corpus, damping_factor):
                 inbound_sources[link] = [page]
 
     # Setup PageRank to be all equal in the beginning.
-    corpus_size = len(corpus)
-    base = 1 - damping_factor
-    pagerank = {page: base / corpus_size for page in corpus}
-    deviation = 1
+    random_surf = (1 - damping_factor) / len(corpus)
+    pagerank = {page: random_surf for page in corpus}
 
+    # Iteratively modify the values until they converge
+    deviation = float("inf")
     while deviation > 0.001:
+        # Reset / recreate the deviation and pagerank.
         deviation = 0
         new_pagerank = dict()
+
+        # Use the iterative algorithm.
         for page in pagerank:
-            summation = 0
-            for source in inbound_sources[page]:
-                innard = pagerank[source] / len(corpus[source])
-                summation += innard
-            modded = damping_factor * summation
-            new_pagerank[page] = base + modded
+            # Calculate the new rank.
+            new_rank = random_surf + damping_factor * sum(
+                [
+                    pagerank[source] / len(corpus[source])
+                    for source in inbound_sources[page]
+                ]
+            )
+            new_pagerank[page] = new_rank
+
+            # Check to see if the deviation is satisfactory
             page_deviation = abs(pagerank[page] - new_pagerank[page])
             if page_deviation > deviation:
                 deviation = page_deviation
+        # Save the new PageRank.
         pagerank = new_pagerank
 
-    # Bully into becoming 1.
+    # Make the ranks sum to 1.
     current_total = sum(pagerank.values())
     for page in pagerank:
         pagerank[page] /= current_total
