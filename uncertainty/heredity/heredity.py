@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List, Set, Union
 
 import csv
 import itertools
@@ -107,7 +107,12 @@ def powerset(s):
     ]
 
 
-def joint_probability(people, one_gene, two_genes, have_trait):
+def joint_probability(
+    people: Dict[str, Dict[str, Union[str, bool]]],
+    one_gene: Set[str],
+    two_genes: Set[str],
+    have_trait: Set[bool],
+) -> float:
     """
     Compute and return a joint probability.
 
@@ -150,13 +155,21 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         if gene == 0:
             return pass_on[False][parents[0]] * pass_on[False][parents[1]]
         elif gene == 1:
-            return (pass_on[False][parents[0] * pass_on[True][parents[1]]]) + (
-                pass_on[True][parents[0] * pass_on[False][parents[1]]]
+            return (pass_on[False][parents[0]] * pass_on[True][parents[1]]) + (
+                pass_on[True][parents[0]] * pass_on[False][parents[1]]
             )
         elif gene == 2:
             return pass_on[True][parents[0]] * pass_on[True][parents[1]]
 
-    def person_probability(person, gene, trait):
+    def person_probability(person: str, gene: int, trait: bool) -> float:
+        """
+        The probability of a single person existing in their specified state.
+
+        args:
+            person - The key name of a person entry.
+            gene - The gene assumed for this person.
+            trait - The truthiness of their displaying the trait.
+        """
         # Determine likelihood of their gene being as specified.
         probability = PROBS["gene"][gene]
         # Replace this likelihood if they have parents.
@@ -173,27 +186,53 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     overall_probability = 1
     # Check the probability for each person.
     for person in people:
-        overall_probability *= person_probability(
-            person, person_gene(person), have_trait[person]
-        )
+        trait = True if person in have_trait else False
+        overall_probability *= person_probability(person, person_gene(person), trait)
+    return overall_probability
 
 
-def update(probabilities, one_gene, two_genes, have_trait, p):
+def update(
+    probabilities: Dict[str, Dict[str, Union[Dict[int, float], Dict[bool, float]]]],
+    one_gene: Set[str],
+    two_genes: Set[str],
+    have_trait: Set[str],
+    p: float,
+) -> None:
     """
     Add to `probabilities` a new joint probability `p`.
     Each person should have their "gene" and "trait" distributions updated.
     Which value for each distribution is updated depends on whether
     the person is in `have_gene` and `have_trait`, respectively.
     """
-    raise NotImplementedError
+    for person in probabilities:
+        gene = 0
+        if person in one_gene:
+            gene = 1
+        elif person in two_genes:
+            gene = 2
+
+        trait = True if person in have_trait else False
+        probabilities[person]["gene"][gene] += p
+        probabilities[person]["trait"][trait] += p
 
 
-def normalize(probabilities):
+def normalize(
+    probabilities: Dict[str, Dict[str, Union[Dict[int, float], Dict[bool, float]]]]
+) -> None:
     """
     Update `probabilities` such that each probability distribution
     is normalized (i.e., sums to 1, with relative proportions the same).
     """
-    raise NotImplementedError
+    for person in probabilities.values():
+        genes = person["gene"]
+        total = sum(genes.values())
+        for gene in genes:
+            genes[gene] /= total
+
+        traits = person["trait"]
+        total = sum(traits.values())
+        for trait in traits:
+            traits[trait] /= total
 
 
 if __name__ == "__main__":
