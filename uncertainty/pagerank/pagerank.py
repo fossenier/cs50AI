@@ -67,6 +67,13 @@ def transition_model(corpus, page, damping_factor):
     links = corpus[page]
 
     # Add to the distribution (damping_factor / links size) for each link.
+    if len(links) == 0:
+        all_links = set()
+        for link_list in corpus.values():
+            for link in link_list:
+                all_links.add(link)
+        links = list(all_links)
+
     link_weight = damping_factor / len(links)
     for link in links:
         distribution[link] += link_weight
