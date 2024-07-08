@@ -119,7 +119,23 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone not in set` have_trait` does not have the trait.
     """
 
-    def inheritance_probability(parents: List[int], gene: int):
+    def person_gene(
+        person: str,
+    ) -> int:
+        """
+        A given person's gene.
+
+        args:
+            person - one of the people in the dataset.
+        """
+        if person in one_gene:
+            return 1
+        elif person in two_genes:
+            return 2
+        else:
+            return 0
+
+    def inheritance_probability(parents: List[int], gene: int) -> float:
         """
         The probability a specified gene quantity (0, 1, 2) will occur from two
         specified parents (each 0, 1, 2).
@@ -128,7 +144,9 @@ def joint_probability(people, one_gene, two_genes, have_trait):
             parents - The mother and father's genes.
             gene _ The sought after gene.
         """
+        # The probabilities for passing on genes to children.
         pass_on = {True: {0: 0.01, 1: 0.5, 2: 0.99}, False: {0: 0.99, 1: 0.5, 2: 0.01}}
+        # The situations where the gene is passed on in a specific fashion.
         if gene == 0:
             return pass_on[False][parents[0]] * pass_on[False][parents[1]]
         elif gene == 1:
@@ -140,57 +158,24 @@ def joint_probability(people, one_gene, two_genes, have_trait):
 
     def person_probability(person, gene, trait):
         # Determine likelihood of their gene being as specified.
-        probobility = PROBS["gene"][gene]
-        #
+        probability = PROBS["gene"][gene]
+        # Replace this likelihood if they have parents.
+        mother = people[person]["mother"]
+        father = people[person]["father"]
+        if mother and father:
+            probability = inheritance_probability(
+                (person_gene(mother), person_gene(father)), gene
+            )
+
+        # Modify this probability by the likelihood of having the trait.
+        return probability * PROBS["trait"][gene][trait]
 
     overall_probability = 1
     # Check the probability for each person.
     for person in people:
-        person_probability = 1
-        # One copy
-        if person in one_gene:
-            # No parents
-            if not people[person]["mother"] or not people[person]["father"]:
-                person_probability *= PROBS["gene"][1]
-            else:
-                # 1 gene -> from mother and not father or not from mother and from father
-                mom_inheritance_prob = None
-                mom = people[person]["mother"]
-                if mom in one_gene:
-                    mom_inheritance_prob = 0.5
-                elif mom in two_genes:
-                    mom_inheritance_prob = 0.99  # TODO mutation
-                else:
-                    mom_inheritance_prob = 0.01  # TODO mutation
-                dad_inheritance_prob = None
-                dad = people[person]["father"]
-                if dad in one_gene:
-                    dad_inheritance_prob = 0.5
-                elif dad in two_genes:
-                    dad_inheritance_prob = 0.99  # TODO mutation
-                else:
-                    dad_inheritance_prob = 0.01  # TODO mutation
-
-                person_probability *= mom_inheritance_prob * (
-                    1 - dad_inheritance_prob
-                ) + (dad_inheritance_prob * (1 - mom_inheritance_prob))
-        # This individual has two copies.
-        # This individual has no copies.
-
-        # This invidual exhibits the trait.
-        if person in have_trait:
-            if person in one_gene:
-                person_probability *= PROBS["trait"][1][True]
-            elif person in two_genes:
-                person_probability *= PROBS["trait"][2][True]
-        # This individual doesn't exhibit the trait.
-        else:
-            if person in one_gene:
-                person_probability *= PROBS["trait"][1][False]
-            elif person in two_genes:
-                person_probability *= PROBS["trait"][2][False]
-
-        # Multiply overall by first + second
+        overall_probability *= person_probability(
+            person, person_gene(person), have_trait[person]
+        )
 
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
