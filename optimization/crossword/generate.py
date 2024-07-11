@@ -5,7 +5,7 @@ from crossword import *
 
 class CrosswordCreator:
 
-    def __init__(self, crossword):
+    def __init__(self, crossword: Crossword):
         """
         Create new CSP crossword generate.
         """
@@ -97,7 +97,7 @@ class CrosswordCreator:
         self.ac3()
         return self.backtrack(dict())
 
-    def enforce_node_consistency(self):
+    def enforce_node_consistency(self) -> None:
         """
         Update `self.domains` such that each variable is node-consistent.
         (Remove any values that are inconsistent with a variable's unary
@@ -110,7 +110,7 @@ class CrosswordCreator:
                     inconsistent_words.add(word)
             self.domains[var].difference_update(inconsistent_words)
 
-    def revise(self, x, y):
+    def revise(self, x: Variable, y: Variable) -> bool:
         """
         Make variable `x` arc consistent with variable `y`.
         To do so, remove values from `self.domains[x]` for which there is no
@@ -119,7 +119,24 @@ class CrosswordCreator:
         Return True if a revision was made to the domain of `x`; return
         False if no revision was made.
         """
-        raise NotImplementedError
+        overlap = self.crossword.overlaps[x, y]
+        # There is nothing to revise.
+        if not overlap:
+            return False
+
+        # (i, j), where v1's ith character overlaps v2's jth character.
+        i, j = overlap
+        y_letters = set()
+        inconsistent_words = set()
+        for word in self.domains[y]:
+            y_letters.add(word[j])
+        for word in self.domains[x]:
+            if word[i] not in y_letters:
+                inconsistent_words.add(word)
+
+        # Revise the domain
+        self.domains[x].difference_update(inconsistent_words)
+        return True
 
     def ac3(self, arcs=None):
         """
