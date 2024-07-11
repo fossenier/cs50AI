@@ -95,6 +95,7 @@ class CrosswordCreator:
         Enforce node and arc consistency, and then solve the CSP.
         """
         self.enforce_node_consistency()
+
         self.ac3()
         return self.backtrack(dict())
 
@@ -154,7 +155,7 @@ class CrosswordCreator:
         queue = (
             arcs
             if arcs
-            else [(x, y) for (x, y), flag in self.crossword.overlaps if flag]
+            else [(x, y) for (x, y), flag in self.crossword.overlaps.items() if flag]
         )
         while len(queue) > 0:
             x, y = queue.pop()
@@ -212,16 +213,19 @@ class CrosswordCreator:
             seen_values.add(word)
         return True
 
-    def order_domain_values(self, var, assignment):
+    def order_domain_values(
+        self, var: Variable, assignment: Dict[Variable, str]
+    ) -> str:
         """
         Return a list of values in the domain of `var`, in order by
         the number of values they rule out for neighboring variables.
         The first value in the list, for example, should be the one
         that rules out the fewest values among the neighbors of `var`.
         """
-        raise NotImplementedError
+        # TODO implement, this is first slice
+        return list(self.domains[var])
 
-    def select_unassigned_variable(self, assignment):
+    def select_unassigned_variable(self, assignment: Dict[Variable, str]) -> Variable:
         """
         Return an unassigned variable not already part of `assignment`.
         Choose the variable with the minimum number of remaining values
@@ -229,7 +233,10 @@ class CrosswordCreator:
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
-        raise NotImplementedError
+        # TODO implement, this is first slice
+        for var in self.domains:
+            if var not in assignment:
+                return var
 
     def backtrack(self, assignment):
         """
@@ -240,7 +247,17 @@ class CrosswordCreator:
 
         If no assignment is possible, return None.
         """
-        raise NotImplementedError
+        if self.assignment_complete(assignment):
+            return assignment
+        var = self.select_unassigned_variable(assignment)
+        for value in self.order_domain_values(var, assignment):
+            assignment[var] = value
+            if self.consistent(assignment):
+                result = self.backtrack(assignment)
+                if result:
+                    return result
+            del assignment[var]
+        return None
 
 
 def main():

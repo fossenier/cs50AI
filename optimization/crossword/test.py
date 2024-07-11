@@ -1,3 +1,6 @@
-e = set((1, 2, 3))
+e = dict()
 
-print(len(e))
+e[1] = 2
+del e[1]
+
+print(e)
