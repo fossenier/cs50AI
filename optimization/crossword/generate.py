@@ -1,6 +1,7 @@
 import sys
 
 from crossword import *
+from typing import Dict, List, Tuple
 
 
 class CrosswordCreator:
@@ -141,7 +142,7 @@ class CrosswordCreator:
             self.domains[x].difference_update(inconsistent_words)
         return revised
 
-    def ac3(self, arcs=None):
+    def ac3(self, arcs: List[Tuple[Variable, Variable]] = None) -> bool:
         """
         Update `self.domains` such that each variable is arc consistent.
         If `arcs` is None, begin with initial list of all arcs in the problem.
@@ -165,23 +166,51 @@ class CrosswordCreator:
                         queue.append((var, x))
         return True
 
-    def assignment_complete(self, assignment):
+    def assignment_complete(self, assignment: Dict[Variable, str]) -> bool:
         """
         Return True if `assignment` is complete (i.e., assigns a value to each
         crossword variable); return False otherwise.
         """
+        variables = set()
         for var in assignment:
-            word = assignment[var]
-            if not word or len(word) == 0:
+            variables.add(var)
+            value = assignment[var]
+            # A variable has an incomplete assignment.
+            if not value:
                 return False
+
+        # At least one variable is not yet assigned.
+        if variables != set([var for var in self.domains]):
+            return False
         return True
 
-    def consistent(self, assignment):
+    def consistent(self, assignment: Dict[Variable, str]) -> bool:
         """
         Return True if `assignment` is consistent (i.e., words fit in crossword
         puzzle without conflicting characters); return False otherwise.
         """
-        raise NotImplementedError
+        seen_values = set()
+        for var, word in assignment.items():
+            # This word is not unique.
+            if not word or word in seen_values:
+                return False
+            # An improper length is being used.
+            elif len(word) != var.length:
+                return False
+            neighbors = self.crossword.neighbors(var)
+            for neighbor in neighbors:
+                # Check to see if the neighbor has an assigned word
+                try:
+                    v2_word = assignment[neighbor]
+                except KeyError:
+                    # No word, and thus consistent.
+                    continue
+                i, j = self.crossword.overlaps[var, neighbor]
+                # An inconsistency in placed words has occurred.
+                if word[i] != v2_word[j]:
+                    return False
+            seen_values.add(word)
+        return True
 
     def order_domain_values(self, var, assignment):
         """
