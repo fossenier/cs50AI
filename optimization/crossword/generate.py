@@ -222,6 +222,20 @@ class CrosswordCreator:
         The first value in the list, for example, should be the one
         that rules out the fewest values among the neighbors of `var`.
         """
+        neighbors = self.crossword.neighbors(var)
+        values = dict()
+        for val in self.domains[var]:
+            values[val] = 0
+            for neighbor in neighbors:
+                if val in self.domains[neighbor]:
+                    values[val] += 1
+        return sorted(values, key=values.get)
+
+        # take list of variables
+        # take all neighbours
+
+        # for each variable, check each neighbor and count it's presence
+        # return least presence
         # TODO implement, this is first slice
         return list(self.domains[var])
 
